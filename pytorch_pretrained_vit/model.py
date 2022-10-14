@@ -89,7 +89,7 @@ class ViT(nn.Module):
         h, w = as_tuple(image_size)  # image sizes
         fh, fw = as_tuple(patches)  # patch sizes
         gh, gw = h // fh, w // fw  # number of patches
-        seq_len = gh * gw
+        seq_len = gh * gw # 577 ? 
 
         # Patch embedding
         self.patch_embedding = nn.Conv2d(in_channels, dim, kernel_size=(fh, fw), stride=(fh, fw))
@@ -149,7 +149,7 @@ class ViT(nn.Module):
         nn.init.normal_(self.positional_embedding.pos_embedding, std=0.02)  # _trunc_normal(self.positional_embedding.pos_embedding, std=0.02)
         nn.init.constant_(self.class_token, 0)
 
-    def forward(self, x):
+    def forward(self, x, logits=False):
         """Breaks image into patches, applies transformer, applies MLP head.
 
         Args:
@@ -166,8 +166,10 @@ class ViT(nn.Module):
         if hasattr(self, 'pre_logits'):
             x = self.pre_logits(x)
             x = torch.tanh(x)
-        if hasattr(self, 'fc'):
+        if hasattr(self, 'fc') and not logits:
             x = self.norm(x)[:, 0]  # b,d
             x = self.fc(x)  # b,num_classes
-        return x
+            return x
+        else:
+            return x
 
