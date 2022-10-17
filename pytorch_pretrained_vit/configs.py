@@ -80,6 +80,7 @@ PRETRAINED_MODELS = {
     },
     'B_16_imagenet1k': {
       'config': drop_head_variant(get_b16_config()),
+      #'config': get_b16_config(), # keep head
       'num_classes': 1000,
       'image_size': (384, 384),
       'url': "https://github.com/lukemelas/PyTorch-Pretrained-ViT/releases/download/0.0.2/B_16_imagenet1k.pth"

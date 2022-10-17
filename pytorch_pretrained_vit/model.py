@@ -84,12 +84,12 @@ class ViT(nn.Module):
             if num_classes is None:
                 num_classes = PRETRAINED_MODELS[name]['num_classes']
         self.image_size = image_size                
-
+        print("repr size", representation_size)
         # Image and patch sizes
         h, w = as_tuple(image_size)  # image sizes
         fh, fw = as_tuple(patches)  # patch sizes
         gh, gw = h // fh, w // fw  # number of patches
-        seq_len = gh * gw # 577 ? 
+        seq_len = gh * gw # 576 ? 
 
         # Patch embedding
         self.patch_embedding = nn.Conv2d(in_channels, dim, kernel_size=(fh, fw), stride=(fh, fw))
@@ -110,12 +110,15 @@ class ViT(nn.Module):
                                        ff_dim=ff_dim, dropout=dropout_rate)
         
         # Representation layer
+        print(representation_size, load_repr_layer)
         if representation_size and load_repr_layer:
+            print("Representation layer added.")
             self.pre_logits = nn.Linear(dim, representation_size)
+            self.representation_size = representation_size
             pre_logits_size = representation_size
         else:
             pre_logits_size = dim
-
+        print("pre_logits_size", pre_logits_size)
         # Classifier head
         self.norm = nn.LayerNorm(pre_logits_size, eps=1e-6)
         self.fc = nn.Linear(pre_logits_size, num_classes)
@@ -161,8 +164,11 @@ class ViT(nn.Module):
         if hasattr(self, 'class_token'):
             x = torch.cat((self.class_token.expand(b, -1, -1), x), dim=1)  # b,gh*gw+1,d
         if hasattr(self, 'positional_embedding'): 
-            x = self.positional_embedding(x)  # b,gh*gw+1,d 
+            x = self.positional_embedding(x)  # b,gh*gw+1,d   # +1 due to CLS
         x = self.transformer(x)  # b,gh*gw+1,d
+        
+        # for imagenet_1k, no pre_logits in pretraining
+        
         if hasattr(self, 'pre_logits'):
             x = self.pre_logits(x)
             x = torch.tanh(x)
@@ -171,5 +177,5 @@ class ViT(nn.Module):
             x = self.fc(x)  # b,num_classes
             return x
         else:
-            return x
+            return x[:, 0] # the first CLS token
 
